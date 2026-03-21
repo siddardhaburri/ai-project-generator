@@ -18,8 +18,8 @@ const limiter = rateLimit({
 // ✅ CORS (IMPORTANT)
 app.use(cors({
   origin: [
-    "http://localhost:5173",
-    "https://your-frontend.vercel.app"
+    "http://localhost:3000",
+    "https://ai-project-generator-three.vercel.app/"
   ],
   credentials: true
 }));
