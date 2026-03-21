@@ -17,7 +17,7 @@ router.post("/", async (req, res) => {
 
     const prompt = `You are an expert software engineering mentor. A student wants to build a mini project on: "${topic}"
 
-Return ONLY JSON in this format:
+Return ONLY JSON in this EXACT format (no markdown, no extra text):
 
 {
   "projectIdea": {
@@ -34,9 +34,12 @@ Return ONLY JSON in this format:
     "backend": ["Node"],
     "database": ["MongoDB"]
   },
+  "githubStructure": {
+    "folders": ["/client", "/server", "/server/models", "/server/routes"],
+    "files": ["README.md", "package.json", "/server/server.js"]
+  },
   "tags": ["ai", "project"]
 }`;
-
     // ✅ Gemini API (WORKING MODEL)
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -71,6 +74,10 @@ Return ONLY JSON in this format:
         .trim();
 
       parsed = JSON.parse(cleaned);
+      parsed.githubStructure = parsed.githubStructure || {
+  folders: [],
+  files: []
+};
     } catch (err) {
       console.log("Parse Error:", rawText);
       return res.status(500).json({ error: "Invalid AI JSON response" });
