@@ -36,10 +36,10 @@ app.get("/health", (req, res) =>
   res.json({ status: "OK", message: "AI Project Generator API is running" })
 );
 
-// ✅ MongoDB connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Error:", err));
+const connectDB = require("./config/db");
+
+// ✅ Initialize DB
+connectDB();
 
 // ✅ Server start
 const PORT = process.env.PORT || 5000;

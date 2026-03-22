@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import api from '../utils/api';
+
+import { Search, Zap, Heart, Bookmark, Trash2, MessageSquare, Inbox } from 'lucide-react';
+import api from '../services/api';
 
 export default function History() {
   const [projects, setProjects] = useState([]);
@@ -9,9 +10,11 @@ export default function History() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({});
+  const [error, setError] = useState(null);
 
   const fetchProjects = async (searchTerm = '', pageNum = 1) => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({ page: pageNum, limit: 9 });
       if (searchTerm) params.append('search', searchTerm);
@@ -19,7 +22,7 @@ export default function History() {
       setProjects(res.data.data);
       setPagination(res.data.pagination);
     } catch (err) {
-      toast.error('Failed to load projects');
+      setError('Failed to load projects. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -39,10 +42,9 @@ export default function History() {
     if (!window.confirm('Delete this project?')) return;
     try {
       await api.delete(`/projects/${id}`);
-      toast.success('Project deleted');
       fetchProjects(search, page);
     } catch {
-      toast.error('Failed to delete');
+      alert('Failed to delete project. Please try again.');
     }
   };
 
@@ -50,27 +52,60 @@ export default function History() {
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px' }}>
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '8px' }}>📚 Project History</h1>
-        <p style={{ color: '#64748b' }}>All your generated projects in one place</p>
+        <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '8px', color: '#f0f0f5' }}>
+          Project History
+        </h1>
+        <p style={{ color: '#9294a0' }}>All your generated projects in one place</p>
       </div>
 
-      {/* Search */}
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px', marginBottom: '32px', maxWidth: '500px' }}>
-        <input className="input" placeholder="Search projects..." value={search} onChange={(e) => setSearch(e.target.value)} />
-        <button className="btn btn-primary" type="submit">🔍 Search</button>
+      <form onSubmit={handleSearch} className="search-bar" style={{ marginBottom: '32px', maxWidth: '500px' }}>
+        <input 
+          className="input" 
+          placeholder="Search projects" 
+          value={search} 
+          onChange={(e) => setSearch(e.target.value)} 
+        />
+        <button type="submit" style={{ 
+          background: 'transparent', border: 'none', color: '#6366f1', 
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: '40px', height: '40px', transition: 'color 0.2s'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.color = '#8b5cf6'}
+        onMouseLeave={(e) => e.currentTarget.style.color = '#6366f1'}>
+          <Search size={18} />
+        </button>
       </form>
+
+      {error && (
+        <div style={{
+          color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', 
+          padding: '12px 20px', borderRadius: '10px', border: '1px solid rgba(239, 68, 68, 0.2)',
+          marginBottom: '24px', fontSize: '0.95rem', fontWeight: '500'
+        }}>
+          {error}
+        </div>
+      )}
 
       {/* Grid */}
       {loading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-          {[...Array(6)].map((_, i) => <div key={i} className="skeleton" style={{ height: '180px', borderRadius: '16px' }} />)}
+          {[...Array(6)].map((_, i) => <div key={i} className="skeleton" style={{ height: '200px', borderRadius: '16px' }} />)}
         </div>
       ) : projects.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '16px' }}>📭</div>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: '700', marginBottom: '8px' }}>No projects yet</h3>
-          <p style={{ color: '#64748b', marginBottom: '24px' }}>Generate your first project to see it here</p>
-          <Link to="/" className="btn btn-primary">⚡ Generate Now</Link>
+        <div className="empty-state">
+          <Inbox size={64} className="empty-icon" />
+          <h3>No projects yet</h3>
+          <p>Generate your first project to see it here</p>
+          <Link to="/" style={{ 
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            background: 'transparent', border: 'none', color: '#6366f1',
+            textDecoration: 'none', fontWeight: '600', transition: 'color 0.2s',
+            marginTop: '8px'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#8b5cf6'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#6366f1'}>
+            Generate Now
+          </Link>
         </div>
       ) : (
         <>
@@ -81,29 +116,46 @@ export default function History() {
                 to={`/project/${project._id}`}
                 style={{ textDecoration: 'none' }}
               >
-                <div className="card" style={{ cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(99,102,241,0.15)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = ''; }}>
+                <div className="card" style={{
+                  cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)', position: 'relative',
+                }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.borderColor = 'rgba(99,102,241,0.2)';
+                    e.currentTarget.style.boxShadow = '0 12px 40px rgba(99,102,241,0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = '';
+                    e.currentTarget.style.boxShadow = '';
+                  }}>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      {project.liked && <span title="Liked">❤️</span>}
-                      {project.saved && <span title="Saved">🔖</span>}
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      {project.liked && <Heart size={14} style={{ color: '#a5b4fc' }} fill="currentColor" />}
+                      {project.saved && <Bookmark size={14} style={{ color: '#a5b4fc' }} fill="currentColor" />}
                     </div>
                     <button onClick={(e) => handleDelete(project._id, e)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', opacity: '0.5', transition: 'opacity 0.2s' }}
-                      onMouseEnter={(e) => e.target.style.opacity = '1'}
-                      onMouseLeave={(e) => e.target.style.opacity = '0.5'}>
-                      🗑️
+                      className="icon-btn danger"
+                      style={{
+                        width: '28px', height: '28px',
+                        opacity: '0.4', transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                      onMouseLeave={(e) => e.currentTarget.style.opacity = '0.4'}>
+                      <Trash2 size={14} />
                     </button>
                   </div>
 
-                  <h3 style={{ fontWeight: '700', fontSize: '1rem', marginBottom: '8px', color: '#0f172a' }}>
+                  <h3 style={{ fontWeight: '700', fontSize: '1rem', marginBottom: '8px', color: '#f0f0f5' }}>
                     {project.projectIdea?.title || project.userInput}
                   </h3>
 
-                  <p style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '14px' }}>
-                    💬 "{project.userInput}"
+                  <p style={{
+                    fontSize: '0.82rem', color: '#5c5e6a', marginBottom: '14px',
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                  }}>
+                    <MessageSquare size={12} /> "{project.userInput}"
                   </p>
 
                   {project.tags?.length > 0 && (
@@ -114,7 +166,7 @@ export default function History() {
                     </div>
                   )}
 
-                  <div style={{ marginTop: '14px', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                  <div style={{ marginTop: '14px', fontSize: '0.75rem', color: '#3f4150' }}>
                     {new Date(project.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </div>
                 </div>
