@@ -1,0 +1,227 @@
+# ⚡ AI Project Generator
+
+Turn any student idea into a **complete project plan instantly** — powered by **Google Gemini AI + MERN Stack**
+
+---
+
+## 🚀 Overview
+
+AI Project Generator helps students quickly convert a simple idea like:
+
+> *"mini project on AI"*
+
+into a **fully structured project plan** with everything needed to start building.
+
+---
+
+## ✨ Features
+
+* 🤖 **AI-Powered Generation** (Google Gemini 1.5 Flash)
+* 📌 Project title, description & difficulty level
+* 🧩 Feature breakdown (Must Have / Should Have / Nice to Have)
+* 🛠️ Full tech stack suggestions
+* 📁 Auto-generated GitHub folder structure
+* 📄 README template generation
+* 💻 Sample starter code
+* ❤️ Like & Save projects
+* 📜 History tracking (MongoDB)
+* 🔍 Search & pagination
+* 📱 Responsive UI (Mobile + Desktop)
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer    | Technology                          |
+| -------- | ----------------------------------- |
+| Frontend | React.js 18, React Router v6, Axios |
+| Backend  | Node.js, Express.js                 |
+| Database | MongoDB Atlas + Mongoose            |
+| AI       | Google Gemini 1.5 Flash API         |
+| Styling  | Custom CSS (Light Theme)            |
+
+---
+
+## 📁 Project Structure
+
+```
+ai-project-generator/
+│
+├── backend/
+│   ├── models/
+│   │   └── Project.js
+│   ├── routes/
+│   │   ├── generate.js
+│   │   └── projects.js
+│   ├── server.js
+│   ├── .env.example
+│   └── package.json
+│
+├── frontend/
+│   ├── public/
+│   │   └── index.html
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Navbar.jsx
+│   │   │   └── ProjectResult.jsx
+│   │   ├── pages/
+│   │   │   ├── Home.jsx
+│   │   │   ├── History.jsx
+│   │   │   └── ProjectDetail.jsx
+│   │   ├── utils/
+│   │   │   └── api.js
+│   │   ├── App.jsx
+│   │   ├── index.js
+│   │   └── index.css
+│   └── package.json
+│
+├── package.json
+└── README.md
+```
+
+---
+
+## ⚙️ Setup Instructions
+
+### 1️⃣ Clone the Repository
+
+```bash
+git clone https://github.com/your-username/ai-project-generator.git
+cd ai-project-generator
+```
+
+---
+
+### 2️⃣ Install Dependencies
+
+```bash
+# Root
+npm install
+
+# Backend
+cd backend
+npm install
+
+# Frontend
+cd ../frontend
+npm install
+```
+
+---
+
+### 3️⃣ Setup Environment Variables
+
+Create `.env` file inside `backend/`:
+
+```env
+PORT=5000
+MONGODB_URI=your_mongodb_connection_string
+GOOGLE_GEMINI_API_KEY=your_gemini_api_key
+NODE_ENV=development
+```
+
+---
+
+### 4️⃣ Run the Application
+
+#### Option A (Recommended)
+
+```bash
+npm run dev
+```
+
+#### Option B (Manual)
+
+```bash
+# Backend
+cd backend
+npm run dev
+
+# Frontend (new terminal)
+cd frontend
+npm start
+```
+
+---
+
+## 🌐 Access URLs
+
+* Frontend → http://localhost:3000
+* Backend → http://localhost:5000
+* Health Check → http://localhost:5000/health
+
+---
+
+## 📡 API Endpoints
+
+| Method | Endpoint               | Description      |
+| ------ | ---------------------- | ---------------- |
+| POST   | /api/generate          | Generate project |
+| GET    | /api/projects          | Get all projects |
+| GET    | /api/projects/:id      | Get one project  |
+| PATCH  | /api/projects/:id/like | Toggle like      |
+| PATCH  | /api/projects/:id/save | Toggle save      |
+| DELETE | /api/projects/:id      | Delete project   |
+
+---
+
+## 🧪 Example API Request
+
+```bash
+curl -X POST http://localhost:5000/api/generate \
+-H "Content-Type: application/json" \
+-d '{"topic": "mini project on machine learning"}'
+```
+
+---
+
+## 🚀 Deployment
+
+### Backend
+
+* Deploy on **Render / Railway**
+* Add environment variables in dashboard
+
+### Frontend
+
+* Deploy on **Vercel / Netlify**
+* Add:
+
+```env
+REACT_APP_API_URL=https://your-backend-url.com/api
+```
+
+---
+
+## 📌 Future Improvements
+
+* 🔐 Authentication (JWT / OAuth)
+* 🌙 Dark Mode UI
+* 📊 Analytics Dashboard
+* 🧠 Multi-model AI support
+* 📁 Export as PDF / ZIP
+
+---
+
+## 📝 License
+
+MIT License — Free for educational and personal use.
+
+---
+
+## 🙌 Author
+
+**Siddardha Burri**
+
+---
+
+## ⭐ Support
+
+If you like this project:
+
+👉 Give it a **star ⭐ on GitHub**
+👉 Share with your friends
+
+---
+
+**Made with ❤️ using MERN Stack + Google Gemini AI**
