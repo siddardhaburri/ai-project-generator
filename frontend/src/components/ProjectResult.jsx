@@ -24,19 +24,56 @@ function buildFileMap(project) {
   const sampleCode = project.sampleCode?.code || '';
   const sampleFilename = project.sampleCode?.filename || 'main.js';
 
-  files['README.md'] = readme;
+  // fileContents can be a plain object or a Mongoose Map serialized as object
+  const fileContents = project.fileContents
+    ? (typeof project.fileContents.get === 'function'
+        ? Object.fromEntries(project.fileContents)   // Mongoose Map
+        : project.fileContents)                       // plain object from JSON
+    : {};
+
+  // Always include a proper .gitignore
   files['.gitignore'] = `node_modules/\n.env\n.DS_Store\ndist/\nbuild/\n*.log\n`;
 
-  const codePath = folders.includes('src') ? `src/${sampleFilename}` : sampleFilename;
-  if (sampleCode) files[codePath] = sampleCode;
+  // Use AI-generated readme if available, else fallback
+  files['README.md'] = readme;
 
-  fileNames.forEach((f) => {
-    if (!files[f]) files[f] = `// ${f} - generated for ${title}\n`;
+  // Merge all AI-generated file contents (real code!)
+  Object.entries(fileContents).forEach(([path, content]) => {
+    if (path && content) files[path] = content;
   });
 
+  // Place the sample code into its proper path (overrides placeholder if present)
+  if (sampleCode && sampleFilename) {
+    const codePath = folders.includes('src') && !sampleFilename.startsWith('src/')
+      ? `src/${sampleFilename}`
+      : sampleFilename;
+    files[codePath] = sampleCode;
+  }
+
+  // For any listed file not yet covered, add a meaningful stub (not empty)
+  fileNames.forEach((f) => {
+    if (!files[f]) {
+      const ext = f.split('.').pop();
+      const stubs = {
+        js: `// ${f}\n// TODO: implement this module\n`,
+        jsx: `// ${f}\nimport React from 'react';\n\nexport default function Component() {\n  return <div>{/* TODO */}</div>;\n}\n`,
+        ts: `// ${f}\n// TODO: implement this module\n`,
+        tsx: `// ${f}\nimport React from 'react';\n\nexport default function Component() {\n  return <div>{/* TODO */}</div>;\n}\n`,
+        css: `/* ${f} */\n/* TODO: add styles */\n`,
+        json: `{}\n`,
+        md: `# ${f}\n\nTODO: add documentation.\n`,
+        env: `# Environment variables\n# Copy this file to .env and fill in values\n`,
+        html: `<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="UTF-8"><title>App</title></head>\n<body></body>\n</html>\n`,
+      };
+      files[f] = stubs[ext] || `# ${f}\n`;
+    }
+  });
+
+  // Ensure every listed folder has at least one file so it appears in the zip
   folders.forEach((folder) => {
-    if (!Object.keys(files).some((k) => k.startsWith(folder + '/'))) {
-      files[`${folder}/.gitkeep`] = '';
+    const clean = folder.replace(/^\//, '');
+    if (!Object.keys(files).some((k) => k.startsWith(clean + '/'))) {
+      files[`${clean}/.gitkeep`] = '';
     }
   });
 

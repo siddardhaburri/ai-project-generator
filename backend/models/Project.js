@@ -38,6 +38,11 @@ const projectSchema = new mongoose.Schema(
       code: String,
       explanation: String,
     },
+    fileContents: {
+      type: Map,
+      of: String,
+      default: {},
+    },
     liked: { type: Boolean, default: false },
     saved: { type: Boolean, default: false },
     tags: [String],

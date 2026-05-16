@@ -17,7 +17,7 @@ router.post("/", async (req, res) => {
 
     const prompt = `You are an expert software engineering mentor. A student wants to build a mini project on: "${topic}"
 
-Return ONLY JSON in this EXACT format (no markdown, no extra text):
+Return ONLY valid JSON in this EXACT format (no markdown, no extra text, no code fences):
 
 {
   "projectIdea": {
@@ -31,15 +31,37 @@ Return ONLY JSON in this EXACT format (no markdown, no extra text):
   ],
   "techStack": {
     "frontend": ["React"],
-    "backend": ["Node"],
-    "database": ["MongoDB"]
+    "backend": ["Node.js"],
+    "database": ["MongoDB"],
+    "tools": ["npm"],
+    "apis": []
   },
   "githubStructure": {
-    "folders": ["/client", "/server", "/server/models", "/server/routes"],
-    "files": ["README.md", "package.json", "/server/server.js"]
+    "folders": ["src", "src/components", "src/pages", "public"],
+    "files": ["README.md", "package.json", "src/index.js", "src/App.js"],
+    "readme": "# Project Title\\n\\nDescription here.\\n\\n## Setup\\n\\nnpm install && npm start"
   },
-  "tags": ["ai", "project"]
-}`;
+  "fileContents": {
+    "README.md": "# Project Title\\n\\nFull readme content here with setup instructions.",
+    "package.json": "{\\n  \\"name\\": \\"project-name\\",\\n  \\"version\\": \\"1.0.0\\",\\n  \\"scripts\\": { \\"start\\": \\"node src/index.js\\" },\\n  \\"dependencies\\": {}\\n}",
+    "src/index.js": "// Entry point\\nconsole.log('Hello World');",
+    "src/App.js": "// Main application file\\n// Add your code here"
+  },
+  "sampleCode": {
+    "filename": "src/App.js",
+    "language": "JavaScript",
+    "code": "// Full working sample code for the main file\\n// with real implementation",
+    "explanation": "Brief explanation of what this code does"
+  },
+  "tags": ["tag1", "tag2"]
+}
+
+IMPORTANT RULES:
+1. fileContents must have REAL, WORKING code for EVERY file listed in githubStructure.files
+2. The code must be actual implementation code, not placeholder comments
+3. sampleCode.code must be a complete working implementation of the main feature
+4. All string values with newlines must use \\n (escaped newlines) since this is JSON
+5. Do not use actual newlines inside JSON string values`;
     // ✅ Gemini API (WORKING MODEL)
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -74,10 +96,17 @@ Return ONLY JSON in this EXACT format (no markdown, no extra text):
         .trim();
 
       parsed = JSON.parse(cleaned);
-      parsed.githubStructure = parsed.githubStructure || {
-  folders: [],
-  files: []
-};
+      parsed.githubStructure = parsed.githubStructure || { folders: [], files: [] };
+      parsed.sampleCode = parsed.sampleCode || {};
+      // Ensure fileContents is a plain object mapping filename -> code
+      if (!parsed.fileContents || Array.isArray(parsed.fileContents) || typeof parsed.fileContents !== 'object') {
+        parsed.fileContents = {};
+      }
+      // Mirror sampleCode into fileContents so it's always included in the zip
+      if (parsed.sampleCode?.filename && parsed.sampleCode?.code) {
+        parsed.fileContents[parsed.sampleCode.filename] =
+          parsed.fileContents[parsed.sampleCode.filename] || parsed.sampleCode.code;
+      }
     } catch (err) {
       console.log("Parse Error:", rawText);
       return res.status(500).json({ error: "Invalid AI JSON response" });
