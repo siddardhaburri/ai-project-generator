@@ -14,71 +14,152 @@ const DIFFICULTY_COLORS = {
   'Advanced': { bg: '#fee2e2', color: '#991b1b' },
 };
 
+// ─── Helpers to derive folder placement per file ─────────────────────────────
+
+/** Returns the best folder prefix for a given filename based on its extension / name. */
+function inferFolder(filename, folders) {
+  const name = filename.toLowerCase();
+  const ext  = name.split('.').pop();
+
+  const rules = [
+    { match: (n, e) => ['jsx','tsx','vue'].includes(e) || n.includes('component'), folder: 'src/components' },
+    { match: (n, e) => ['js','ts'].includes(e) && (n.includes('util') || n.includes('helper') || n.includes('lib')), folder: 'src/utils' },
+    { match: (n, e) => ['js','ts'].includes(e) && (n.includes('hook')), folder: 'src/hooks' },
+    { match: (n, e) => ['js','ts'].includes(e) && (n.includes('service') || n.includes('api')), folder: 'src/services' },
+    { match: (n, e) => ['js','ts','jsx','tsx'].includes(e) && (n.includes('page') || n.includes('view') || n.includes('screen')), folder: 'src/pages' },
+    { match: (n, e) => ['css','scss','sass','less','styl'].includes(e), folder: 'src/styles' },
+    { match: (n, e) => ['png','jpg','jpeg','svg','gif','webp','ico'].includes(e), folder: 'public/assets' },
+    { match: (n, e) => ['json'].includes(e) && !n.includes('package'), folder: 'src/data' },
+    { match: (n, e) => ['test.js','test.ts','spec.js','spec.ts'].some(s => n.endsWith(s)) || n.includes('__test__'), folder: 'tests' },
+    { match: (n, e) => ['md','mdx'].includes(e) && n !== 'readme.md', folder: 'docs' },
+    { match: (n, e) => ['js','ts'].includes(e) && (n.includes('route') || n.includes('router')), folder: 'src/routes' },
+    { match: (n, e) => ['js','ts'].includes(e) && (n.includes('model') || n.includes('schema') || n.includes('entity')), folder: 'src/models' },
+    { match: (n, e) => ['js','ts'].includes(e) && (n.includes('middleware') || n.includes('guard')), folder: 'src/middleware' },
+    { match: (n, e) => ['js','ts'].includes(e) && (n.includes('config') || n.includes('setting')), folder: 'config' },
+    { match: (n, e) => ['env','example'].includes(e) || n.startsWith('.env'), folder: null }, // root
+    { match: (n, e) => ['js','ts'].includes(e), folder: 'src' },
+  ];
+
+  for (const rule of rules) {
+    if (rule.match(name, ext)) {
+      // Only place in a sub-folder if it (or an ancestor) is declared in `folders`
+      if (rule.folder === null) return null;
+      const best = folders.find(f => rule.folder.startsWith(f)) ? rule.folder : (folders.includes('src') ? 'src' : null);
+      return best;
+    }
+  }
+  return null;
+}
+
+/**
+ * Build the full virtual file-system map for a project.
+ * Files that belong inside folders are nested accordingly.
+ */
 function buildFileMap(project) {
-  const files = {};
-  const title = project.projectIdea?.title || 'project';
-  const description = project.projectIdea?.description || '';
-  const folders = project.githubStructure?.folders || [];
-  const fileNames = project.githubStructure?.files || [];
-  const readme = project.githubStructure?.readme || `# ${title}\n\n${description}`;
-  const sampleCode = project.sampleCode?.code || '';
-  const sampleFilename = project.sampleCode?.filename || 'main.js';
+  const files  = {};
+  const title  = project.projectIdea?.title       || 'project';
+  const desc   = project.projectIdea?.description || '';
+  const folders     = project.githubStructure?.folders || [];
+  const fileNames   = project.githubStructure?.files   || [];
+  const readme      = project.githubStructure?.readme  || `# ${title}\n\n${desc}`;
+  const sampleCode  = project.sampleCode?.code         || '';
+  const sampleFile  = project.sampleCode?.filename     || 'main.js';
+  const language    = (project.sampleCode?.language    || 'javascript').toLowerCase();
 
-  // fileContents can be a plain object or a Mongoose Map serialized as object
-  const fileContents = project.fileContents
-    ? (typeof project.fileContents.get === 'function'
-        ? Object.fromEntries(project.fileContents)   // Mongoose Map
-        : project.fileContents)                       // plain object from JSON
-    : {};
-
-  // Always include a proper .gitignore
-  files['.gitignore'] = `node_modules/\n.env\n.DS_Store\ndist/\nbuild/\n*.log\n`;
-
-  // Use AI-generated readme if available, else fallback
+  // ── Root-level files ──────────────────────────────────────────────────────
   files['README.md'] = readme;
+  files['.gitignore'] = buildGitignore(language);
+  files['.env.example'] = buildEnvExample(project);
 
-  // Merge all AI-generated file contents (real code!)
-  Object.entries(fileContents).forEach(([path, content]) => {
-    if (path && content) files[path] = content;
-  });
+  // package.json / pyproject.toml / etc. at root
+  const configFile = buildConfigFile(project, title, desc, language);
+  if (configFile) Object.assign(files, configFile);
 
-  // Place the sample code into its proper path (overrides placeholder if present)
-  if (sampleCode && sampleFilename) {
-    const codePath = folders.includes('src') && !sampleFilename.startsWith('src/')
-      ? `src/${sampleFilename}`
-      : sampleFilename;
-    files[codePath] = sampleCode;
+  // ── Sample code → correct folder ─────────────────────────────────────────
+  if (sampleCode) {
+    const folder = inferFolder(sampleFile, folders);
+    const path   = folder ? `${folder}/${sampleFile}` : sampleFile;
+    files[path]  = sampleCode;
   }
 
-  // For any listed file not yet covered, add a meaningful stub (not empty)
+  // ── Other declared files → infer their folder ─────────────────────────────
   fileNames.forEach((f) => {
-    if (!files[f]) {
-      const ext = f.split('.').pop();
-      const stubs = {
-        js: `// ${f}\n// TODO: implement this module\n`,
-        jsx: `// ${f}\nimport React from 'react';\n\nexport default function Component() {\n  return <div>{/* TODO */}</div>;\n}\n`,
-        ts: `// ${f}\n// TODO: implement this module\n`,
-        tsx: `// ${f}\nimport React from 'react';\n\nexport default function Component() {\n  return <div>{/* TODO */}</div>;\n}\n`,
-        css: `/* ${f} */\n/* TODO: add styles */\n`,
-        json: `{}\n`,
-        md: `# ${f}\n\nTODO: add documentation.\n`,
-        env: `# Environment variables\n# Copy this file to .env and fill in values\n`,
-        html: `<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="UTF-8"><title>App</title></head>\n<body></body>\n</html>\n`,
-      };
-      files[f] = stubs[ext] || `# ${f}\n`;
+    if (files[f]) return; // already added
+    const folder = inferFolder(f, folders);
+    const path   = folder ? `${folder}/${f}` : f;
+    if (!files[path]) {
+      files[path] = generateStubContent(f, title, language);
     }
   });
 
-  // Ensure every listed folder has at least one file so it appears in the zip
+  // ── Ensure every declared folder has at least a placeholder ───────────────
   folders.forEach((folder) => {
-    const clean = folder.replace(/^\//, '');
-    if (!Object.keys(files).some((k) => k.startsWith(clean + '/'))) {
-      files[`${clean}/.gitkeep`] = '';
+    const hasContent = Object.keys(files).some((k) => k.startsWith(folder + '/'));
+    if (!hasContent) {
+      files[`${folder}/.gitkeep`] = '';
     }
   });
 
   return files;
 }
+
+// ─── Content generators ───────────────────────────────────────────────────────
+
+function buildGitignore(language) {
+  const base = `node_modules/\n.env\n.DS_Store\ndist/\nbuild/\n*.log\n.vscode/\n.idea/\n`;
+  const extras = {
+    python: `__pycache__/\n*.pyc\n*.pyo\n*.egg-info/\nvenv/\n.venv/\n`,
+    java:   `*.class\n*.jar\ntarget/\n.gradle/\n`,
+    go:     `*.exe\n*.test\nvendor/\n`,
+    rust:   `target/\n*.lock\n`,
+  };
+  return base + (extras[language] || '');
+}
+
+function buildEnvExample(project) {
+  const lines = ['# Copy this file to .env and fill in your values', ''];
+  const stack = Object.values(project.techStack || {}).flat().map(s => s.toLowerCase());
+  if (stack.some(s => s.includes('mongo')))    lines.push('MONGODB_URI=mongodb://localhost:27017/mydb');
+  if (stack.some(s => s.includes('postgres'))) lines.push('DATABASE_URL=postgresql://user:pass@localhost:5432/mydb');
+  if (stack.some(s => s.includes('redis')))    lines.push('REDIS_URL=redis://localhost:6379');
+  if (stack.some(s => s.includes('stripe')))   lines.push('STRIPE_SECRET_KEY=sk_test_...');
+  if (stack.some(s => s.includes('openai')))   lines.push('OPENAI_API_KEY=sk-...');
+  lines.push('PORT=3000');
+  lines.push('NODE_ENV=development');
+  return lines.join('\n');
+}
+
+function buildConfigFile(project, title, desc, language) {
+  const slug = title.replace(/\s+/g, '-').toLowerCase();
+  if (['javascript', 'typescript', 'js', 'ts', 'node', 'react', 'vue', 'next', 'nuxt'].includes(language)) {
+    const stack = Object.values(project.techStack || {}).flat().map(s => s.toLowerCase());
+    const deps  = {};
+    if (stack.some(s => s.includes('react')))    deps['react'] = '^18.0.0';
+    if (stack.some(s => s.includes('express')))  deps['express'] = '^4.18.0';
+    if (stack.some(s => s.includes('next')))     deps['next'] = '^14.0.0';
+    if (stack.some(s => s.includes('mongo')))    deps['mongoose'] = '^8.0.0';
+    if (stack.some(s => s.includes('postgres'))) deps['pg'] = '^8.11.0';
+    const pkg = { name: slug, version: '1.0.0', description: desc, main: 'src/index.js', scripts: { start: 'node src/index.js', dev: 'nodemon src/index.js', test: 'jest' }, dependencies: deps };
+    return { 'package.json': JSON.stringify(pkg, null, 2) };
+  }
+  if (language === 'python') {
+    return { 'requirements.txt': '# Add your Python dependencies here\n' };
+  }
+  return null;
+}
+
+function generateStubContent(filename, title, language) {
+  const ext = filename.split('.').pop().toLowerCase();
+  if (['js', 'ts'].includes(ext))  return `// ${filename}\n// Part of ${title}\n\nexport {};\n`;
+  if (['jsx', 'tsx'].includes(ext)) return `// ${filename}\n// Part of ${title}\n\nexport default function ${filename.replace(/\.[^.]+$/, '')}() {\n  return null;\n}\n`;
+  if (ext === 'py')  return `# ${filename}\n# Part of ${title}\n`;
+  if (ext === 'css') return `/* ${filename} – styles for ${title} */\n`;
+  if (ext === 'md')  return `# ${filename.replace(/\.md$/, '')}\n\nDocumentation for **${title}**.\n`;
+  if (ext === 'json') return '{}\n';
+  return `# ${filename}\n`;
+}
+
+// ─── ZIP download ─────────────────────────────────────────────────────────────
 
 async function downloadZip(project) {
   if (!window.JSZip) {
@@ -90,15 +171,20 @@ async function downloadZip(project) {
       document.head.appendChild(script);
     });
   }
-  const zip = new window.JSZip();
+  const zip   = new window.JSZip();
   const title = (project.projectIdea?.title || 'project').replace(/\s+/g, '-').toLowerCase();
-  const root = zip.folder(title);
+  const root  = zip.folder(title);
+
   const fileMap = buildFileMap(project);
-  Object.entries(fileMap).forEach(([path, content]) => root.file(path, content));
+  Object.entries(fileMap).forEach(([path, content]) => {
+    // path may already contain nested directories (e.g. "src/components/App.jsx")
+    root.file(path, content);
+  });
+
   const blob = await zip.generateAsync({ type: 'blob' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
   a.download = `${title}.zip`;
   document.body.appendChild(a);
   a.click();
@@ -106,26 +192,31 @@ async function downloadZip(project) {
   URL.revokeObjectURL(url);
 }
 
+// ─── GitHub modal ─────────────────────────────────────────────────────────────
+
 function GitHubModal({ project, onClose }) {
-  const [token, setToken] = useState('');
+  const [token,    setToken]    = useState('');
   const [repoName, setRepoName] = useState(
     (project.projectIdea?.title || 'my-project').replace(/\s+/g, '-').toLowerCase()
   );
   const [isPrivate, setIsPrivate] = useState(false);
-  const [pushing, setPushing] = useState(false);
-  const [repoUrl, setRepoUrl] = useState('');
+  const [pushing,   setPushing]   = useState(false);
+  const [repoUrl,   setRepoUrl]   = useState('');
+  const [progress,  setProgress]  = useState({ done: 0, total: 0 });
 
   const pushToGitHub = async () => {
-    if (!token.trim()) { toast.error('Please enter your GitHub token'); return; }
+    if (!token.trim())    { toast.error('Please enter your GitHub token'); return; }
     if (!repoName.trim()) { toast.error('Please enter a repo name'); return; }
     setPushing(true);
     try {
+      // Validate token
       const userRes = await fetch('https://api.github.com/user', {
         headers: { Authorization: `token ${token}` },
       });
       if (!userRes.ok) throw new Error('Invalid GitHub token. Please check and try again.');
       const user = await userRes.json();
 
+      // Create repo
       const createRes = await fetch('https://api.github.com/user/repos', {
         method: 'POST',
         headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
@@ -142,32 +233,48 @@ function GitHubModal({ project, onClose }) {
       }
       const repo = await createRes.json();
 
+      // Push files – each file automatically creates intermediate directories on GitHub
       const fileMap = buildFileMap(project);
-      for (const [path, content] of Object.entries(fileMap)) {
+      const entries = Object.entries(fileMap);
+      setProgress({ done: 0, total: entries.length });
+
+      for (const [idx, [path, content]] of entries.entries()) {
         const encoded = btoa(unescape(encodeURIComponent(content)));
-        await fetch(`https://api.github.com/repos/${user.login}/${repoName}/contents/${path}`, {
-          method: 'PUT',
-          headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: `Add ${path}`, content: encoded }),
-        });
+        const res = await fetch(
+          `https://api.github.com/repos/${user.login}/${repoName}/contents/${path}`,
+          {
+            method:  'PUT',
+            headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ message: `Add ${path}`, content: encoded }),
+          }
+        );
+        if (!res.ok) {
+          const err = await res.json();
+          console.warn(`Skipped ${path}:`, err.message);
+        }
+        setProgress({ done: idx + 1, total: entries.length });
       }
+
       setRepoUrl(repo.html_url);
       toast.success('Pushed to GitHub successfully!');
     } catch (err) {
       toast.error(err.message || 'Failed to push to GitHub');
     } finally {
       setPushing(false);
+      setProgress({ done: 0, total: 0 });
     }
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div style={{ background: '#fff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '480px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '800', color: '#0f172a' }}>🐙 Push to GitHub</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.83rem', color: '#94a3b8' }}>Create a new repo and push all project files</p>
+            <p style={{ margin: '4px 0 0', fontSize: '0.83rem', color: '#94a3b8' }}>Create a new repo and push all project files into folders</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: '#94a3b8' }}>✕</button>
         </div>
@@ -187,25 +294,52 @@ function GitHubModal({ project, onClose }) {
           <>
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>GitHub Personal Access Token *</label>
-              <input type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" value={token} onChange={(e) => setToken(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', boxSizing: 'border-box', outline: 'none', fontFamily: 'monospace' }} />
+              <input
+                type="password"
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', boxSizing: 'border-box', outline: 'none', fontFamily: 'monospace' }}
+              />
               <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
-                🔒 Your token is never stored. &nbsp;
+                🔒 Your token is never stored.&nbsp;
                 <a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank" rel="noreferrer" style={{ color: '#6366f1' }}>Create token here</a>
               </p>
             </div>
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>Repository Name *</label>
-              <input type="text" value={repoName} onChange={(e) => setRepoName(e.target.value.replace(/\s+/g, '-').toLowerCase())}
-                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', boxSizing: 'border-box', outline: 'none' }} />
+              <input
+                type="text"
+                value={repoName}
+                onChange={(e) => setRepoName(e.target.value.replace(/\s+/g, '-').toLowerCase())}
+                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', boxSizing: 'border-box', outline: 'none' }}
+              />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
               <input type="checkbox" id="private-toggle" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
               <label htmlFor="private-toggle" style={{ fontSize: '0.87rem', color: '#475569', cursor: 'pointer', fontWeight: '600' }}>🔒 Make repository private</label>
             </div>
-            <button onClick={pushToGitHub} disabled={pushing}
-              style={{ width: '100%', padding: '13px', background: pushing ? '#94a3b8' : '#0f172a', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '700', cursor: pushing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              {pushing ? (<><span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />Pushing to GitHub...</>) : '🚀 Create Repo & Push Files'}
+
+            {pushing && progress.total > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#64748b', marginBottom: '6px' }}>
+                  <span>Pushing files…</span>
+                  <span>{progress.done} / {progress.total}</span>
+                </div>
+                <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(progress.done / progress.total) * 100}%`, background: '#6366f1', borderRadius: '99px', transition: 'width 0.3s ease' }} />
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={pushToGitHub}
+              disabled={pushing}
+              style={{ width: '100%', padding: '13px', background: pushing ? '#94a3b8' : '#0f172a', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '700', cursor: pushing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              {pushing ? (
+                <><span style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />Pushing to GitHub…</>
+              ) : '🚀 Create Repo & Push Files'}
             </button>
           </>
         )}
@@ -214,11 +348,13 @@ function GitHubModal({ project, onClose }) {
   );
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export default function ProjectResult({ project }) {
-  const [copied, setCopied] = useState(false);
-  const [liked, setLiked] = useState(project.liked);
-  const [saved, setSaved] = useState(project.saved);
-  const [zipping, setZipping] = useState(false);
+  const [copied,    setCopied]    = useState(false);
+  const [liked,     setLiked]     = useState(project.liked);
+  const [saved,     setSaved]     = useState(project.saved);
+  const [zipping,   setZipping]   = useState(false);
   const [showGitHub, setShowGitHub] = useState(false);
 
   const copyCode = () => {
@@ -249,12 +385,17 @@ export default function ProjectResult({ project }) {
     try {
       await downloadZip(project);
       toast.success('📦 ZIP downloaded successfully!');
-    } catch (err) {
+    } catch {
       toast.error('Failed to generate ZIP');
     } finally {
       setZipping(false);
     }
   };
+
+  // Build a preview of the folder tree for display
+  const fileMap    = buildFileMap(project);
+  const filePaths  = Object.keys(fileMap).sort();
+  const folderSet  = new Set(filePaths.map(p => p.includes('/') ? p.split('/')[0] : null).filter(Boolean));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -285,11 +426,12 @@ export default function ProjectResult({ project }) {
           </div>
         )}
 
-        {/* ── Download ZIP & Push to GitHub Buttons ── */}
         <div style={{ display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap' }}>
           <button onClick={handleDownloadZip} disabled={zipping}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', color: '#6366f1', border: 'none', borderRadius: '12px', padding: '10px 20px', fontWeight: '700', fontSize: '0.9rem', cursor: zipping ? 'not-allowed' : 'pointer', opacity: zipping ? 0.7 : 1, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-            {zipping ? (<><span style={{ width: '14px', height: '14px', border: '2px solid #6366f1', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />Creating ZIP...</>) : '📦 Download ZIP'}
+            {zipping ? (
+              <><span style={{ width: '14px', height: '14px', border: '2px solid #6366f1', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />Creating ZIP…</>
+            ) : '📦 Download ZIP'}
           </button>
           <button onClick={() => setShowGitHub(true)}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: '12px', padding: '10px 20px', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
@@ -330,26 +472,17 @@ export default function ProjectResult({ project }) {
         </div>
       </div>
 
-      {/* GitHub Structure */}
+      {/* GitHub Structure – now shows the real resolved folder tree */}
       <div className="card">
-        <div className="section-title">📁 GitHub Project Structure</div>
+        <div className="section-title">📁 Project File Structure</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+          {/* Folder tree */}
           <div>
-            <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Folders</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {project.githubStructure?.folders?.map((f) => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.85rem', color: '#6366f1' }}>📂 {f}</div>
-              ))}
-            </div>
+            <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Folder Tree</div>
+            <FolderTree filePaths={filePaths} />
           </div>
-          <div>
-            <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Files</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {project.githubStructure?.files?.map((f) => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.85rem', color: '#475569' }}>📄 {f}</div>
-              ))}
-            </div>
-          </div>
+
+          {/* README preview */}
           {project.githubStructure?.readme && (
             <div>
               <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>README Preview</div>
@@ -382,6 +515,71 @@ export default function ProjectResult({ project }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Folder tree renderer ─────────────────────────────────────────────────────
+
+function FolderTree({ filePaths }) {
+  // Build a nested tree from flat paths
+  const tree = {};
+  filePaths.forEach((p) => {
+    const parts = p.split('/');
+    let node = tree;
+    parts.forEach((part, i) => {
+      if (i === parts.length - 1) {
+        node[part] = null; // leaf = file
+      } else {
+        node[part] = node[part] || {};
+        node = node[part];
+      }
+    });
+  });
+
+  return (
+    <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.82rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px', maxHeight: '320px', overflow: 'auto' }}>
+      <TreeNode name="(root)" node={tree} depth={0} defaultOpen />
+    </div>
+  );
+}
+
+function TreeNode({ name, node, depth, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const isFolder = node !== null && typeof node === 'object';
+
+  if (!isFolder) {
+    // File leaf
+    return (
+      <div style={{ paddingLeft: `${depth * 16}px`, display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', padding: `2px 0 2px ${depth * 16}px` }}>
+        <span style={{ opacity: 0.5 }}>📄</span> {name}
+      </div>
+    );
+  }
+
+  const children = Object.entries(node).sort(([a, av], [b, bv]) => {
+    // Folders first
+    const aIsFolder = av !== null && typeof av === 'object';
+    const bIsFolder = bv !== null && typeof bv === 'object';
+    if (aIsFolder && !bIsFolder) return -1;
+    if (!aIsFolder && bIsFolder) return  1;
+    return a.localeCompare(b);
+  });
+
+  return (
+    <div>
+      {depth > 0 && (
+        <div
+          onClick={() => setOpen(o => !o)}
+          style={{ paddingLeft: `${(depth - 1) * 16}px`, display: 'flex', alignItems: 'center', gap: '6px', color: '#6366f1', fontWeight: '700', cursor: 'pointer', padding: `2px 0 2px ${(depth - 1) * 16}px`, userSelect: 'none' }}
+        >
+          <span>{open ? '📂' : '📁'}</span> {name}
+          <span style={{ opacity: 0.4, fontSize: '0.7rem', fontWeight: '400' }}>{open ? '▾' : '▸'}</span>
+        </div>
+      )}
+      {(open || depth === 0) && children.map(([childName, childNode]) => (
+        <TreeNode key={childName} name={childName} node={childNode} depth={depth + 1} />
+      ))}
     </div>
   );
 }
