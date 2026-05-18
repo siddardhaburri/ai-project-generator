@@ -4,7 +4,9 @@ import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import History from './pages/History';
+import Gallery from './pages/Gallery';
 import ProjectDetail from './pages/ProjectDetail';
+import SharedProject from './pages/SharedProject';
 
 export default function App() {
   return (
@@ -14,7 +16,7 @@ export default function App() {
         toastOptions={{
           duration: 4000,
           style: {
-            fontFamily: 'Plus Jakarta Sans, sans-serif',
+            fontFamily: 'Outfit, sans-serif',
             fontSize: '0.9rem',
             borderRadius: '12px',
             border: '1px solid #e2e8f0',
@@ -29,7 +31,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/history" element={<History />} />
+          <Route path="/gallery" element={<Gallery />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
+          <Route path="/share/:slug" element={<SharedProject />} />
         </Routes>
       </main>
     </Router>
