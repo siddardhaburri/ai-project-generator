@@ -149,8 +149,12 @@ projectSchema.index({ domainTags: 1 });
 projectSchema.index({ tags: 1 });
 projectSchema.index({ shareSlug: 1 });
 
-const Project =
-  mongoose.models.Project ||
-  mongoose.model("Project", projectSchema);
+let Project;
+
+try {
+  Project = mongoose.model("Project");
+} catch {
+  Project = mongoose.model("Project", projectSchema);
+}
 
 module.exports = Project;
