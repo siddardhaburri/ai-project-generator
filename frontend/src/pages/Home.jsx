@@ -6,7 +6,7 @@ import ProjectResult from '../components/ProjectResult';
 
 const EXAMPLE_TOPICS = [
   '🤖 AI Chatbot', '🌦️ Weather App', '📝 Smart Todo', '🎵 Music Recommender',
-  '📊 Data Dashboard', '🔐 Password Manager', '🛒 E-commerce Site', '📸 Image Classifier',
+  '📊 Data Dashboard', ' Password Manager', '🛒 E-commerce Site', '📸 Image Classifier',
 ];
 
 const TECH_OPTIONS = ['React', 'Vue', 'Angular', 'Node.js', 'Python', 'Java', 'Django', 'FastAPI', 'MongoDB', 'PostgreSQL', 'AI/ML', 'TypeScript'];
