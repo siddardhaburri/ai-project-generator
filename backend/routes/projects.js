@@ -36,7 +36,6 @@ const projectSchema = new mongoose.Schema(
 
     projectIdea: {
       title: String,
-
       description: String,
 
       difficulty: {
@@ -45,18 +44,14 @@ const projectSchema = new mongoose.Schema(
       },
 
       estimatedTime: String,
-
       estimatedHours: Number,
-
       teamSize: Number,
-
       domain: String,
     },
 
     features: [
       {
         name: String,
-
         description: String,
 
         priority: {
@@ -153,7 +148,7 @@ let Project;
 
 try {
   Project = mongoose.model("Project");
-} catch {
+} catch (error) {
   Project = mongoose.model("Project", projectSchema);
 }
 
