@@ -137,8 +137,8 @@ router.post("/starter-code", async (req, res) => {
     const { projectId } = req.body;
     if (!projectId) return res.status(400).json({ error: "projectId is required" });
 
-    const mongoose = require("mongoose");
-    const project = await mongoose.model("Project").findById(projectId);
+   const project = await Project.findById(projectId);
+    
     if (!project) return res.status(404).json({ error: "Project not found" });
 
     const title = (project.projectIdea && project.projectIdea.title) || "My Project";
