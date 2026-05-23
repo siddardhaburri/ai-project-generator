@@ -9,7 +9,7 @@ const PRIORITY_COLORS = {
   'Nice to Have': 'badge-success',
 };
 
-// ─── File structure helpers (unchanged from original) ────────────────────────
+// ─── File structure helpers ───────────────────────────────────────────────────
 function inferFolder(filename, folders) {
   const name = filename.toLowerCase();
   const ext = name.split('.').pop();
@@ -45,11 +45,16 @@ function buildFileMap(project) {
   const readme = project.githubStructure?.readme || `# ${title}\n\n${desc}`;
   const sampleCode = project.sampleCode?.code || '';
   const sampleFile = project.sampleCode?.filename || 'main.js';
-  const language = (project.sampleCode?.language || 'javascript').toLowerCase();
 
   files['README.md'] = readme;
   files['.gitignore'] = `node_modules/\n.env\n.DS_Store\ndist/\nbuild/\n*.log\n`;
   files['.env.example'] = `PORT=3000\nNODE_ENV=development\n`;
+
+  // Include the HTML preview file in the ZIP
+  if (project.htmlPreview) {
+    const htmlTitle = title.replace(/\s+/g, '-').toLowerCase();
+    files[`${htmlTitle}.html`] = project.htmlPreview;
+  }
 
   if (sampleCode) {
     const folder = inferFolder(sampleFile, folders);
@@ -85,6 +90,17 @@ async function downloadZip(project) {
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
+// ─── Download single HTML file ────────────────────────────────────────────────
+function downloadHtml(project) {
+  const html = project.htmlPreview;
+  if (!html) return;
+  const title = (project.projectIdea?.title || 'project').replace(/\s+/g, '-').toLowerCase();
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `${title}.html`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
 // ─── Export as Markdown ───────────────────────────────────────────────────────
 function exportMarkdown(project) {
   const p = project.projectIdea || {};
@@ -94,9 +110,13 @@ function exportMarkdown(project) {
     `### Milestone ${m.order}: ${m.title}\n${m.description}\n\n${(m.tasks || []).map(t => `- [ ] ${t}`).join('\n')}`
   ).join('\n\n');
   const resume = (project.resumeBullets || []).map(b => `- ${b}`).join('\n');
-
-  const md = `# ${p.title}\n\n> ${p.description}\n\n**Difficulty:** ${p.difficulty} | **Time:** ${p.estimatedTime} | **Team:** ${p.teamSize || 1}\n\n## Tech Stack\n${stack}\n\n## Features\n${features}\n\n## Roadmap\n${roadmap}\n\n## Sample Code\n\`\`\`${project.sampleCode?.language || 'js'}\n${project.sampleCode?.code || ''}\n\`\`\`\n\n## Resume Bullets\n${resume}\n`;
-
+  const md = [
+    `# ${p.title}`, '', `> ${p.description}`, '',
+    `**Difficulty:** ${p.difficulty} | **Time:** ${p.estimatedTime} | **Team:** ${p.teamSize || 1}`, '',
+    '## Tech Stack', stack, '', '## Features', features, '', '## Roadmap', roadmap, '',
+    '## Sample Code', '```' + (project.sampleCode?.language || 'js'), project.sampleCode?.code || '', '```', '',
+    '## Resume Bullets', resume,
+  ].join('\n');
   const blob = new Blob([md], { type: 'text/markdown' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url;
@@ -107,20 +127,18 @@ function exportMarkdown(project) {
 // ─── Export as PDF ────────────────────────────────────────────────────────────
 function exportPDF(project) {
   const p = project.projectIdea || {};
-  const printContent = `
-    <html><head><title>${p.title}</title>
+  const printContent = `<html><head><title>${p.title}</title>
     <style>body{font-family:Arial,sans-serif;padding:40px;color:#0f172a;max-width:800px;margin:0 auto}
     h1{color:#6366f1}h2{color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin-top:32px}
     .badge{background:#e0e7ff;color:#4f46e5;padding:3px 10px;border-radius:20px;font-size:0.8em;margin-right:6px}
     .feature{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin:8px 0}
-    .task{margin:4px 0;padding-left:20px}pre{background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;white-space:pre-wrap;font-size:0.8em}
+    pre{background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;white-space:pre-wrap;font-size:0.8em}
     </style></head><body>
-    <h1>${p.title}</h1>
-    <p>${p.description}</p>
+    <h1>${p.title}</h1><p>${p.description}</p>
     <span class="badge">${p.difficulty}</span><span class="badge">⏱ ${p.estimatedTime}</span>
     <h2>Features</h2>${(project.features||[]).map(f=>`<div class="feature"><strong>${f.name}</strong> (${f.priority})<br/><small>${f.description}</small></div>`).join('')}
     <h2>Tech Stack</h2><p>${Object.entries(project.techStack||{}).map(([k,v])=>`<strong>${k}:</strong> ${(v||[]).join(', ')}`).join(' | ')}</p>
-    <h2>Roadmap</h2>${(project.roadmap||[]).map(m=>`<h3>Milestone ${m.order}: ${m.title}</h3><p>${m.description}</p>${(m.tasks||[]).map(t=>`<div class="task">☐ ${t}</div>`).join('')}`).join('')}
+    <h2>Roadmap</h2>${(project.roadmap||[]).map(m=>`<h3>Milestone ${m.order}: ${m.title}</h3><p>${m.description}</p>${(m.tasks||[]).map(t=>`<div>☐ ${t}</div>`).join('')}`).join('')}
     ${project.sampleCode?.code?`<h2>Sample Code</h2><pre>${project.sampleCode.code.replace(/</g,'&lt;')}</pre>`:''}
     ${(project.resumeBullets||[]).length?`<h2>Resume Bullets</h2><ul>${project.resumeBullets.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}
     </body></html>`;
@@ -128,6 +146,131 @@ function exportPDF(project) {
   w.document.write(printContent);
   w.document.close();
   w.print();
+}
+
+// ─── HTML Preview Section ─────────────────────────────────────────────────────
+function HtmlPreviewSection({ project }) {
+  const [view, setView] = useState('preview'); // 'preview' | 'code'
+  const [copied, setCopied] = useState(false);
+  const html = project.htmlPreview;
+
+  if (!html) return null;
+
+  const copyCode = () => {
+    navigator.clipboard.writeText(html);
+    setCopied(true);
+    toast.success('HTML code copied!');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    downloadHtml(project);
+    toast.success('HTML file downloaded!');
+  };
+
+  return (
+    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc',
+        flexWrap: 'wrap', gap: '10px',
+      }}>
+        <div>
+          <div className="section-title" style={{ marginBottom: '2px' }}>🌐 HTML Preview</div>
+          <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Working demo — open in browser or download</div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Toggle preview/code */}
+          <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: '10px', padding: '3px' }}>
+            <button
+              onClick={() => setView('preview')}
+              style={{
+                padding: '5px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                fontSize: '0.82rem', fontWeight: '600',
+                background: view === 'preview' ? '#fff' : 'transparent',
+                color: view === 'preview' ? '#6366f1' : '#64748b',
+                boxShadow: view === 'preview' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+              }}>
+              👁 Preview
+            </button>
+            <button
+              onClick={() => setView('code')}
+              style={{
+                padding: '5px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                fontSize: '0.82rem', fontWeight: '600',
+                background: view === 'code' ? '#fff' : 'transparent',
+                color: view === 'code' ? '#6366f1' : '#64748b',
+                boxShadow: view === 'code' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+              }}>
+              {'</>'}  Code
+            </button>
+          </div>
+          {/* Copy button */}
+          <button onClick={copyCode} className="btn btn-secondary btn-sm">
+            {copied ? '✅ Copied!' : '📋 Copy'}
+          </button>
+          {/* Download button */}
+          <button
+            onClick={handleDownload}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '7px 16px', borderRadius: '10px', border: 'none',
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              color: '#fff', fontWeight: '700', fontSize: '0.82rem',
+              cursor: 'pointer', boxShadow: '0 2px 10px rgba(99,102,241,0.3)',
+            }}>
+            ⬇️ Download .html
+          </button>
+        </div>
+      </div>
+
+      {/* Preview iframe */}
+      {view === 'preview' && (
+        <div style={{ position: 'relative', background: '#fff' }}>
+          <iframe
+            srcDoc={html}
+            title="HTML Preview"
+            style={{
+              width: '100%',
+              height: '500px',
+              border: 'none',
+              display: 'block',
+            }}
+            sandbox="allow-scripts allow-same-origin"
+          />
+          <div style={{
+            position: 'absolute', bottom: '12px', right: '12px',
+          }}>
+            <button
+              onClick={handleDownload}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 16px', borderRadius: '10px', border: 'none',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                color: '#fff', fontWeight: '700', fontSize: '0.82rem',
+                cursor: 'pointer', boxShadow: '0 4px 15px rgba(99,102,241,0.4)',
+              }}>
+              ⬇️ Download .html
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Source code view */}
+      {view === 'code' && (
+        <pre style={{
+          margin: 0, padding: '20px', overflow: 'auto',
+          background: '#1e293b', color: '#e2e8f0',
+          fontFamily: 'JetBrains Mono, monospace',
+          fontSize: '0.82rem', lineHeight: '1.7',
+          maxHeight: '500px', whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+        }}>
+          <code>{html}</code>
+        </pre>
+      )}
+    </div>
+  );
 }
 
 // ─── GitHub Push Modal ────────────────────────────────────────────────────────
@@ -223,7 +366,6 @@ function GitHubModal({ project, onClose }) {
 // ─── Roadmap Component ────────────────────────────────────────────────────────
 function RoadmapView({ roadmap, projectId, onRefresh }) {
   const [regenerating, setRegenerating] = useState(false);
-
   const regenerate = async () => {
     setRegenerating(true);
     try {
@@ -233,9 +375,7 @@ function RoadmapView({ roadmap, projectId, onRefresh }) {
     } catch { toast.error('Failed to regenerate'); }
     finally { setRegenerating(false); }
   };
-
   if (!roadmap?.length) return null;
-
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -248,15 +388,13 @@ function RoadmapView({ roadmap, projectId, onRefresh }) {
         {roadmap.map((milestone, idx) => (
           <div key={idx} style={{ display: 'flex', gap: '16px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-              <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '800', fontSize: '0.9rem', flexShrink: 0 }}>{milestone.order}</div>
+              <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '800', fontSize: '0.9rem' }}>{milestone.order}</div>
               {idx < roadmap.length - 1 && <div style={{ width: '2px', flex: 1, background: '#e2e8f0', marginTop: '8px', minHeight: '20px' }} />}
             </div>
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', flex: 1, marginBottom: idx < roadmap.length - 1 ? '0' : '0' }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                 <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '0.95rem' }}>{milestone.title}</div>
-                <span style={{ background: '#e0e7ff', color: '#4f46e5', padding: '2px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '8px' }}>
-                  ~{milestone.estimatedDays}d
-                </span>
+                <span style={{ background: '#e0e7ff', color: '#4f46e5', padding: '2px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '8px' }}>~{milestone.estimatedDays}d</span>
               </div>
               <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 10px' }}>{milestone.description}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -274,11 +412,10 @@ function RoadmapView({ roadmap, projectId, onRefresh }) {
   );
 }
 
-// ─── Resume Bullets Component ─────────────────────────────────────────────────
+// ─── Resume Bullets ───────────────────────────────────────────────────────────
 function ResumeBulletsView({ bullets, projectId, onRefresh }) {
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
-
   const generate = async () => {
     setGenerating(true);
     try {
@@ -288,13 +425,11 @@ function ResumeBulletsView({ bullets, projectId, onRefresh }) {
     } catch { toast.error('Failed to generate'); }
     finally { setGenerating(false); }
   };
-
   const copyAll = () => {
     navigator.clipboard.writeText((bullets || []).map(b => `• ${b}`).join('\n'));
     setCopied(true); setTimeout(() => setCopied(false), 2000);
     toast.success('Copied to clipboard!');
   };
-
   if (!bullets?.length) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: '32px' }}>
@@ -307,7 +442,6 @@ function ResumeBulletsView({ bullets, projectId, onRefresh }) {
       </div>
     );
   }
-
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -351,6 +485,26 @@ function StarterCodeModal({ project, onClose }) {
     toast.success('Copied!');
   };
 
+  const downloadAllFiles = async () => {
+    if (!files) return;
+    if (!window.JSZip) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    const zip = new window.JSZip();
+    const title = (project.projectIdea?.title || 'starter').replace(/\s+/g, '-').toLowerCase();
+    files.forEach(f => zip.file(f.filename, f.code));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `${title}-starter.zip`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    toast.success('Starter code ZIP downloaded!');
+  };
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -360,7 +514,15 @@ function StarterCodeModal({ project, onClose }) {
             <h3 style={{ margin: 0, fontWeight: '800', fontSize: '1.2rem' }}>🚀 Starter Code Generator</h3>
             <p style={{ margin: '4px 0 0', fontSize: '0.83rem', color: '#94a3b8' }}>AI-generated boilerplate for your project</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: '#94a3b8' }}>✕</button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {files && (
+              <button onClick={downloadAllFiles}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', fontWeight: '700', fontSize: '0.82rem', cursor: 'pointer' }}>
+                ⬇️ Download ZIP
+              </button>
+            )}
+            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: '#94a3b8' }}>✕</button>
+          </div>
         </div>
         <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
           {!files && !loading && (
@@ -517,6 +679,13 @@ export default function ProjectResult({ project: initialProject, onRegenerate })
             style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', color: '#6366f1', border: 'none', borderRadius: '12px', padding: '10px 18px', fontWeight: '700', fontSize: '0.88rem', cursor: zipping ? 'not-allowed' : 'pointer', opacity: zipping ? 0.7 : 1 }}>
             {zipping ? '⏳ Creating…' : '📦 Download ZIP'}
           </button>
+          {project.htmlPreview && (
+            <button
+              onClick={() => { downloadHtml(project); toast.success('HTML file downloaded!'); }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '12px', padding: '10px 18px', fontWeight: '700', fontSize: '0.88rem', cursor: 'pointer' }}>
+              🌐 Download HTML
+            </button>
+          )}
           <button onClick={() => setShowGitHub(true)}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: '12px', padding: '10px 18px', fontWeight: '700', fontSize: '0.88rem', cursor: 'pointer' }}>
             🐙 Push to GitHub
@@ -590,6 +759,9 @@ export default function ProjectResult({ project: initialProject, onRegenerate })
 
       {/* Roadmap */}
       <RoadmapView roadmap={project.roadmap} projectId={project._id} onRefresh={setProject} />
+
+      {/* HTML Preview — shown right after roadmap */}
+      <HtmlPreviewSection project={project} />
 
       {/* File Structure */}
       <div className="card">
