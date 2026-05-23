@@ -81,4 +81,6 @@ projectSchema.index({ domainTags: 1 });
 projectSchema.index({ tags: 1 });
 projectSchema.index({ shareSlug: 1 });
 
-module.exports = mongoose.model("Project", projectSchema);
+module.exports =
+  mongoose.models.Project ||
+  mongoose.model("Project", ProjectSchema);
