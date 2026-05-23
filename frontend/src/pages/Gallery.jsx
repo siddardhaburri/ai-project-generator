@@ -42,7 +42,7 @@ export default function Gallery() {
     e.stopPropagation();
     try {
       const res = await api.post(`/projects/${id}/remix`);
-      toast.success('🎨 Remixed! Opening your copy...');
+      toast.success(' Remixed! Opening your copy...');
       navigate(`/project/${res.data.data._id}`);
     } catch { toast.error('Failed to remix'); }
   };
