@@ -139,17 +139,13 @@ const projectSchema = new mongoose.Schema(
   }
 );
 
+// Indexes for performance optimization
 projectSchema.index({ "projectIdea.difficulty": 1 });
 projectSchema.index({ domainTags: 1 });
 projectSchema.index({ tags: 1 });
 projectSchema.index({ shareSlug: 1 });
-
-let Project;
-
-try {
-  Project = mongoose.model("Project");
-} catch (error) {
-  Project = mongoose.model("Project", projectSchema);
-}
+//
+// Clean conditional compile: checks existing internal cache first
+const Project = mongoose.models.Project || mongoose.model("Project", projectSchema);
 
 module.exports = Project;
