@@ -8,6 +8,9 @@ dotenv.config();
 
 const app = express();
 
+
+//
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -26,7 +29,7 @@ app.use(cors({
 app.use(express.json({ limit: "2mb" }));
 app.use("/api/", limiter);
 
-app.use("/api/projects", require("./routes/projects"));
+app.use("/api/projects", require("./routes/Projects"));
 app.use("/api/generate", require("./routes/generate"));
 
 app.get("/health", (req, res) =>
