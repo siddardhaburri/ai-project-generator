@@ -38,7 +38,7 @@ export default function ProjectDetail() {
       </button>
       {project.remixedFrom && (
         <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px', fontSize: '0.88rem', color: '#92400e' }}>
-          🎨 This is a remix of another project
+          This is a remix of another project
         </div>
       )}
       <ProjectResult project={project} />
