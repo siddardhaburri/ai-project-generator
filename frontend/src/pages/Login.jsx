@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 function getGoogleAuthUrl() {
   const params = new URLSearchParams({
-    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+    client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || '',
     redirect_uri: `${window.location.origin}/oauth/google`,
     response_type: 'token',
     scope: 'openid email profile',
@@ -35,8 +35,8 @@ function getLinkedInAuthUrl() {
   });
   return `https://www.linkedin.com/oauth/v2/authorization?${params}`;
 }
-console.log("Google ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
-alert(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+console.log("Google ID:", process.env.REACT_APP_GOOGLE_CLIENT_ID);
+alert(process.env.REACT_APP_GOOGLE_CLIENT_ID);
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const inputStyle = {
@@ -215,7 +215,7 @@ export default function Login() {
 
   const handleGoogle = () => {
     setOauthLoading('google');
-    console.log("GOOGLE CLIENT ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
+    console.log("GOOGLE CLIENT ID:", process.env.REACT_APP_GOOGLE_CLIENT_ID);
 console.log("URL:", getGoogleAuthUrl());
     window.location.href = getGoogleAuthUrl();
   };
