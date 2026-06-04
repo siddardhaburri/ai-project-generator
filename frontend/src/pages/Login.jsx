@@ -36,7 +36,7 @@ function getLinkedInAuthUrl() {
   return `https://www.linkedin.com/oauth/v2/authorization?${params}`;
 }
 console.log("Google ID:", process.env.REACT_APP_GOOGLE_CLIENT_ID);
-alert(process.env.REACT_APP_GOOGLE_CLIENT_ID);
+
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const inputStyle = {
