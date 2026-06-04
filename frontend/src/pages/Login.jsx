@@ -215,8 +215,7 @@ export default function Login() {
 
   const handleGoogle = () => {
     setOauthLoading('google');
-    console.log("GOOGLE CLIENT ID:", process.env.REACT_APP_GOOGLE_CLIENT_ID);
-console.log("URL:", getGoogleAuthUrl());
+    
     window.location.href = getGoogleAuthUrl();
   };
 
