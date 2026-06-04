@@ -96,7 +96,24 @@ function LeftPanel() {
 
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '48px' }}>
-        <div style={{ width: '44px', height: '44px', background: 'rgba(255,255,255,0.2)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}><link rel="icon" type="image/png" href="/favicon.jpeg" /></div>
+        <div
+  style={{
+    width: "40px",
+    height: "40px",
+    borderRadius: "10px",
+    overflow: "hidden"
+  }}
+>
+  <img
+    src="/favicon.jpeg"
+    alt="Logo"
+    style={{
+      width: "100%",
+      height: "100%",
+      objectFit: "cover"
+    }}
+  />
+</div>
         <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: '800', fontSize: '1.3rem', color: '#fff' }}>ProjectGen AI</span>
       </div>
 

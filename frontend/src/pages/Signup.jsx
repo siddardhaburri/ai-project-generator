@@ -166,7 +166,24 @@ export default function Signup() {
           {/* Mobile logo */}
           <div style={{ textAlign: 'center', marginBottom: '28px' }} className="mobile-logo">
             <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}><link rel="icon" type="image/png" href="/favicon.jpeg" /></div>
+             <div
+  style={{
+    width: "40px",
+    height: "40px",
+    borderRadius: "10px",
+    overflow: "hidden"
+  }}
+>
+  <img
+    src="/favicon.jpeg"
+    alt="Logo"
+    style={{
+      width: "100%",
+      height: "100%",
+      objectFit: "cover"
+    }}
+  />
+</div>
               <span style={{ fontWeight: '800', fontSize: '1.2rem', color: '#0f172a' }}>ProjectGen <span style={{ color: '#6366f1' }}>AI</span></span>
             </Link>
           </div>
