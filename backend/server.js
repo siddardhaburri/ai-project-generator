@@ -3,18 +3,22 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const rateLimit = require("express-rate-limit");
+const cookieParser = require("cookie-parser");
 
 dotenv.config();
 
 const app = express();
 
-
-//
-
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: { error: "Too many requests, please try again later." },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: "Too many auth attempts. Please wait 15 minutes." },
 });
 
 app.use(cors({
@@ -27,8 +31,11 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: "2mb" }));
+app.use(cookieParser());
 app.use("/api/", limiter);
 
+// ✅ Routes
+app.use("/api/auth", authLimiter, require("./routes/auth"));
 app.use("/api/projects", require("./routes/Projects"));
 app.use("/api/generate", require("./routes/generate"));
 
