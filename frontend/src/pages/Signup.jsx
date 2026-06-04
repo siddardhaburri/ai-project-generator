@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import RunningRobot from '../components/RunningRobot';
 import { useAuth } from '../context/AuthContext';
 
 const inputStyle = {
@@ -56,8 +57,10 @@ function PasswordStrength({ password }) {
         {[1,2,3,4,5].map(i => (
           <div key={i} style={{ flex: 1, height: '3px', borderRadius: '2px', background: i <= strength ? colors[strength] : '#e2e8f0', transition: 'background 0.3s' }} />
         ))}
+        <RunningRobot />
       </div>
       <span style={{ fontSize: '0.75rem', color: colors[strength], fontWeight: '600', fontFamily: 'Outfit, sans-serif' }}>{labels[strength]}</span>
+        <RunningRobot />
     </div>
   );
 }
@@ -133,8 +136,10 @@ export default function Signup() {
       objectFit: "cover"
     }}
   />
+  <RunningRobot />
 </div>
             <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: '800', fontSize: '1.3rem', color: '#fff' }}>ProjectGen AI</span>
+          <RunningRobot />
           </div>
 
           <h2 style={{ fontFamily: 'Outfit, sans-serif', fontWeight: '800', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', color: '#fff', lineHeight: '1.2', marginBottom: '16px' }}>
@@ -153,28 +158,37 @@ export default function Signup() {
               { value: '18', label: 'Powerful Features' },
             ].map((s, i) => (
               <div key={i} style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                <div style={{ color: '#fff', fontWeight: '800', fontSize: '1.5rem', fontFamily: 'Outfit, sans-serif' }}>{s.value}</div>
-                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', marginTop: '2px' }}>{s.label}</div>
+                <div style={{ color: '#fff', fontWeight: '800', fontSize: '1.5rem', fontFamily: 'Outfit, sans-serif' }}>{s.value}<RunningRobot /></div>
+                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', marginTop: '2px' }}>{s.label}<RunningRobot /></div>
+              <RunningRobot />
               </div>
             ))}
+            <RunningRobot />
           </div>
 
           <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '16px', padding: '20px', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
             <div style={{ display: 'flex', gap: '2px', marginBottom: '8px' }}>
               {[1,2,3,4,5].map(i => <span key={i} style={{ color: '#fbbf24', fontSize: '1rem' }}>★</span>)}
+            <RunningRobot />
             </div>
             <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.88rem', fontStyle: 'italic', lineHeight: '1.6', marginBottom: '12px' }}>
               "The AI Mentor feature is like having a senior developer guide you through every step. Absolutely game-changing!"
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: '700', color: '#fff' }}>P</div>
+              <div style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: '700', color: '#fff' }}>P<RunningRobot /></div>
+              <RunningRobot />
               <div>
-                <div style={{ color: '#fff', fontWeight: '700', fontSize: '0.82rem' }}>Priya Sharma</div>
-                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>SWE @ Google</div>
+                <div style={{ color: '#fff', fontWeight: '700', fontSize: '0.82rem' }}> Abhishek Sharma<RunningRobot /></div>
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>SWE @ Google<RunningRobot /></div>
+                <RunningRobot />              
               </div>
+              <RunningRobot />
             </div>
+            <RunningRobot />
           </div>
+          <RunningRobot />
         </div>
+        <RunningRobot />
       </div>
 
       {/* Right - Form */}
@@ -200,9 +214,11 @@ export default function Signup() {
       objectFit: "cover"
     }}
   />
+  <RunningRobot />
 </div>
               <span style={{ fontWeight: '800', fontSize: '1.2rem', color: '#0f172a' }}>ProjectGen <span style={{ color: '#6366f1' }}>AI</span></span>
             </Link>
+            <RunningRobot />
           </div>
 
           <h1 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#0f172a', marginBottom: '6px', textAlign: 'center' }}>Create your account</h1>
@@ -226,7 +242,9 @@ export default function Signup() {
                 icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>}
                 label="LinkedIn" onClick={() => { setOauthLoading('linkedin'); window.location.href = getLinkedInAuthUrl(); }} loading={oauthLoading === 'linkedin'} color="#0A66C2"
               />
+              <RunningRobot />
             </div>
+            <RunningRobot />
           </div>
 
           {/* Divider */}
@@ -234,6 +252,7 @@ export default function Signup() {
             <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
             <span style={{ color: '#94a3b8', fontSize: '0.82rem', fontWeight: '600', whiteSpace: 'nowrap' }}>or sign up with email</span>
             <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+         <RunningRobot />
           </div>
 
           {/* Form */}
@@ -245,6 +264,7 @@ export default function Signup() {
                 onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.12)'; }}
                 onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
               />
+              <RunningRobot />
             </div>
 
             <div>
@@ -254,6 +274,7 @@ export default function Signup() {
                 onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.12)'; }}
                 onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
               />
+              <RunningRobot />
             </div>
 
             <div>
@@ -269,8 +290,10 @@ export default function Signup() {
                   style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.1rem' }}>
                   {showPassword ? '🙈' : '👁️'}
                 </button>
+                <RunningRobot />
               </div>
               <PasswordStrength password={password} />
+              <RunningRobot />
             </div>
 
             <div>
@@ -284,6 +307,7 @@ export default function Signup() {
               {confirmPassword && confirmPassword !== password && (
                 <p style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '4px', fontFamily: 'Outfit, sans-serif' }}>Passwords don't match</p>
               )}
+              <RunningRobot />
             </div>
 
             {/* Terms */}
@@ -318,7 +342,9 @@ export default function Signup() {
             Already have an account?{' '}
             <Link to="/login" style={{ color: '#6366f1', fontWeight: '700', textDecoration: 'none' }}>Sign in →</Link>
           </p>
+          <RunningRobot />
         </div>
+        <RunningRobot />
       </div>
 
       <style>{`
@@ -329,6 +355,7 @@ export default function Signup() {
           .mobile-logo { display: none !important; }
         }
       `}</style>
+      <RunningRobot />
     </div>
   );
 }

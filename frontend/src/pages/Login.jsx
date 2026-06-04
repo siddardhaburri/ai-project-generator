@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import RunningRobot from '../components/RunningRobot';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
