@@ -95,7 +95,7 @@ export default function Signup() {
   };
 
   const getGoogleAuthUrl = () => {
-    const params = new URLSearchParams({ client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || '', redirect_uri: `${window.location.origin}/oauth/google`, response_type: 'token', scope: 'openid email profile', prompt: 'select_account' });
+    const params = new URLSearchParams({ client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '', redirect_uri: `${window.location.origin}/oauth/google`, response_type: 'token', scope: 'openid email profile', prompt: 'select_account' });
     return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
   };
   const getGitHubAuthUrl = () => {

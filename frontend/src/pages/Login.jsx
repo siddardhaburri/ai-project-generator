@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 function getGoogleAuthUrl() {
   const params = new URLSearchParams({
-    client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || '',
+    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
     redirect_uri: `${window.location.origin}/oauth/google`,
     response_type: 'token',
     scope: 'openid email profile',
