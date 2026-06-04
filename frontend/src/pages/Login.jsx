@@ -35,7 +35,8 @@ function getLinkedInAuthUrl() {
   });
   return `https://www.linkedin.com/oauth/v2/authorization?${params}`;
 }
-
+console.log("Google ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
+alert(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const inputStyle = {
