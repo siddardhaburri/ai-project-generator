@@ -160,7 +160,10 @@ router.post("/github", async (req, res) => {
 
     sendTokenResponse(user, res);
   } catch (err) {
-    console.error("GitHub OAuth Error:", err.response?.data || err.message);
+    console.error("GitHub OAuth Error:");
+console.error("Status:", err.response?.status);
+console.error("Data:", err.response?.data);
+console.error("Message:", err.message);
     res.status(401).json({ error: "GitHub authentication failed." });
   }
 });
