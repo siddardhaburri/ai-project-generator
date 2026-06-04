@@ -62,7 +62,7 @@ export default function Home() {
           borderRadius: '20px', fontSize: '0.82rem', fontWeight: '700',
           marginBottom: '20px', letterSpacing: '0.05em', textTransform: 'uppercase',
         }}>
-          ✨ Powered by Google Gemini AI
+          
         </div>
 
         <h1 style={{
@@ -268,7 +268,7 @@ export default function Home() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '32px' }}>
           <div style={{ textAlign: 'center', padding: '24px', color: '#6366f1', fontWeight: '600', fontFamily: 'Outfit, sans-serif' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '12px', animation: 'float 2s ease-in-out infinite' }}>🤖</div>
-            Gemini AI is crafting your perfect project...
+             AI is crafting your perfect project...
           </div>
           {[180, 280, 200, 240].map((h, i) => <div key={i} className="skeleton" style={{ height: h, borderRadius: '16px' }} />)}
         </div>
